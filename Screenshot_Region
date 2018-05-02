@@ -1,0 +1,10 @@
+#!/bin/bash
+
+place=$(date +%m-%Y)
+file=$(date +%d-%m-%Y_%H-%M-%S)
+
+
+mkdir -p ~/Pictures/Screenshots/$place/
+shutter -s -c -o ~/Pictures/Screenshots/$place/$file.png -e
+xclip -sel clip -l 3 -t image/png ~/Pictures/Screenshots/$place/$file.png
+kdialog --icon ~/Pictures/Screenshots/$place/$file.png --title "Screenshot" --passivepopup "Screenshot copied to clipboard" 5 &
