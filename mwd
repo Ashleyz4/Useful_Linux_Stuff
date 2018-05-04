@@ -1,0 +1,10 @@
+#!/bin/bash
+
+sleep 1
+wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
+win=$(xdotool getactivewindow)
+
+y=64
+xdotool windowmove $win x $y
+
+kdialog --title $(xdotool getwindowname $win) --passivepopup "Moved active window below taskbar and unmaxmized" 5 &
