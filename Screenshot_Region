@@ -7,7 +7,7 @@ file=$(date +%d-%m-%Y_%H-%M-%S)
 mkdir -p ~/Pictures/Screenshots/$place/
 
 scrot ~/Pictures/tmp.png -z -q 75
-display ~/Pictures/tmp.png &
+kstart5 display ~/Pictures/tmp.png --keepabove --currentdesktop --fullscreen --activate &
 
 sleep 1
 
