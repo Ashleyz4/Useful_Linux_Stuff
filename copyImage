@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+import sys
+import imghdr
+import subprocess
+import os.path
+
+# I'm using this as a kservice in dolphin (right clicking files and pressing Copy Image)
+# If you want to also use this as a service go to
+#  /home/yourname/.local/share/kservices5/
+#  if the directory doesn't exist, create it
+#  create the file named copyImage.desktop
+#   once created add this text to it (without the #'s):
+#    [Desktop Entry]
+#    Type=Service
+#    Icon=smiley-shape
+#    X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+#    MimeType=all/allfiles;
+#    Actions=copyImage;
+#    Encoding=UTF-8
+#
+#    [Desktop Action copyImage]
+#    Name=Copy Image
+#    Icon=smiley-shape
+#    Exec=copyImage %f
+
+# you can also use this by pressing copy on the image you want
+# then going to terminal and typing copyImage
+# if you don't want to open terminal all the time you can also set a keybind for that
+
+def getClipboardData():
+    p = subprocess.Popen(['xclip','-selection', 'clipboard', '-o'], stdout=subprocess.PIPE)
+    retcode = p.wait()
+    data = p.stdout.read()
+    return data.decode().replace("file://", "")
+
+def notification(title, subtitle, length):
+    p = subprocess.Popen(['kdialog', '--title', title, "--passivepopup", subtitle, length])
+    retcode = p.wait()
+
+def notificationWithIcon(icon, title, subtitle, length):
+    p = subprocess.Popen(['kdialog', '--icon', icon, '--title', "\""+title+"\"", "--passivepopup", "\""+subtitle+"\"", length])
+    retcode = p.wait()
+
+def setClipboardData(data):
+    p = subprocess.Popen(['xclip', '-sel', 'clip', '-l', '3', '-t', 'image/png', data], stdin=subprocess.PIPE)
+    retcode = p.wait()
+    notificationWithIcon(data, "Screenshot", "Screenshot copied to clipboard", "5")
+
+def doImageData(data):
+    exist = os.path.exists(data)
+    if exist:
+        try:
+            what = imghdr.what(data)
+            if(what != None):
+                setClipboardData(data)
+                return True
+        except(IsADirectoryError):
+            pass
+    p = subprocess.Popen(['kdialog', '--sorry', "\"That file is not an image file\""])
+    retcode = p.wait()
+
+if(len(sys.argv) > 1):
+    doImageData(sys.argv[1])
+else:
+    data = getClipboardData()
+    doImageData(data)
