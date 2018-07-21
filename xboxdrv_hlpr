@@ -1,0 +1,282 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+import subprocess
+import re
+import time
+
+"""
+    I created this for all the people who couldn't start xboxdrv because it 
+    can't find their device.
+    
+    This will be able to detect if your device possibly exists and if it's correct.
+    I put my entire night into this code for others. Hopefully it's worth it. :)
+
+    If there are any bugs, please make an issue about my code or make a pull request 
+    helping me out to fix it. Thanks! 
+    (And yes I understand the code is sloppy, I kind of rushed it. Eh.)
+
+Ashleyz4
+"""
+
+# Full --help or -h
+fullHelp = [
+    "Usage: xboxdrv_hlpr [OPTION]...\n" +
+    "Xbox360 USB Gamepad Userspace Driver Helper.\n\n" +
+
+    "General Options:\n" +
+    "  --help, -h\n" +
+    "     Shows help on some stuff\n" +
+    "  --type\n"
+    "     Selects type automatically instead of making you input it\n"
+    "  --auto-detect, -a\n"
+    "     Forces the program to detect the controller automatically\n"
+    "     I\'m not sure how consistent this is and it might fail.\n"
+    "     Auto-detect also requires --type by default."
+    "\n\n" +
+
+    "xboxdrv Options:\n" +
+    "  --x XBOXDRV-OPTION\n" +
+    "     Enables option for xboxdrv\n" +
+    "     EX: xboxdrv_hlpr --x detach-kernal-driver\n" +
+    "  -x XBOXDRV-OPTION\n" +
+    "     Enables option for xboxdrv\n" +
+    "     EX: xboxdrv_hlpr -x d" + 
+    "\n\n" +
+
+    "Debug Options:\n" +
+    "  --debug, -d\n"
+    "     Enables debugging and logging"
+    "\n\n"
+
+    "Report bugs to http://github.com/Ashleyz4"
+]
+
+# quick variables
+#Debug is disabled by default
+debugging = False
+#Selected type isn't selected by default
+selectedType = None
+#Auto-Detection is off by default
+autodetect = False
+
+
+# quick creation of types of controllers from xboxdrv
+xboxdrvTypes = [
+    "xbox", "xbox-mat",
+    "xbox360", "xbox360-guitar",
+    "firestorm", "firestorm-vsb",
+    "saitek-p2500",
+    "generic-usb"
+]
+
+
+# create new task in console with subprocesss
+def popen(todo):
+    p = subprocess.Popen(todo, stdout=subprocess.PIPE)
+    p.wait()
+    data = p.stdout.read()
+    decode = data.decode()
+    return decode
+
+# regex for usb ID and name searching
+def regex(things):
+    if(things is None or things == "" or things == " "):
+        return None
+    reg = re.search('ID\ ([a-z0-9]+\:[a-z0-9]+)\ (.*)', things)
+    if(reg is not None and reg.groups() is not None):
+        return reg.groups()
+    else:
+        print("DEBUG: Nothing found from regex. What the?!?!")
+        print("DEBUG: FULL THING: " + things)
+    return None
+
+# create a new name for the USB
+def newName(thing):
+    new = thing[:35]
+    if(new is not thing):
+        new = new + ".."
+    name = thing.lower()
+    if("logic3" in name):
+        if(autodetect):
+            return "autodetect"
+        return "Possible controller? (Logic3)"
+    return new
+
+# Is the value an int and is it over a max?
+def isInt(s, max):
+    try: 
+        i = int(s)
+        if(i > max or i < 0):
+            return False
+        return True
+    except ValueError:
+        return False
+    return False
+
+# Getting all args function
+def getArgList():
+    global selectedType
+    autodetectArg = False
+    args = list()
+    if(len(sys.argv) > 1):
+        checkNextVal = 0
+        double = False
+        for idx, val in enumerate(sys.argv):
+            if(idx == 0):
+                continue
+            if(checkNextVal is not 0):
+                if(val is None or val == ""):
+                    print("Incomplete arguments!!! Use --help instead")
+                    return False
+                if(checkNextVal is 1):
+                    if(double == True):
+                        args.append("--"+val)
+                    else:
+                        args.append("-"+val)
+                    checkNextVal = 0
+                    double = False
+                elif(checkNextVal is 2):
+                    if(val not in xboxdrvTypes):
+                        print(val + " is not a type in xboxdrv.")
+                        for idx, val in enumerate(xboxdrvTypes):
+                            print(" * " + val)
+                        return False
+                    selectedType = val
+                    checkNextVal = 0
+                continue
+            if(val == "--help" or val == "-h"):
+                print(fullHelp[0])
+                return True
+            elif(val == "--type"):
+                checkNextVal = 2
+            elif(val == "-x"):
+                checkNextVal = 1
+                double = False
+            elif(val == "--x"):
+                checkNextVal = 1
+                double = True
+            elif(val == "-d" or val == "--debug"):
+                global debugging
+                debugging = True
+            elif(val == "--auto-detect"):
+                autodetectArg = True
+            else:
+                print(val + " is not an argument")
+                print("Try using --help instead")
+                return False
+        if(checkNextVal):
+            print("Incomplete arguments!!! Use --help instead")
+            return False
+    if(autodetectArg):
+        if(selectedType is None):
+            print("Auto-Detect arg requires --type arg!!")
+            return False
+        global autodetect
+        autodetect = True
+    if(debugging):
+        print("DEBUG: full arg list of " + str(sys.argv))
+    return args
+
+def start():
+    global selectedType
+    # check args and print out debug mode if enabled
+    args = getArgList()
+    if(args == False or args == True):
+        return args
+    if(debugging):
+        print("WARNING: Debugging is on! Logs will run and the console will not clear")
+        print(' ')
+    else:
+        os.system('clear')
+        
+    # read usbs. If there are no USBs visible this will fail
+    usbs = popen(['lsusb'])
+    usbs = usbs.split('\n')
+    got = 0
+    di = dict()
+    inp = None
+    for idx, val in enumerate(usbs):
+        usb = regex(val)
+        if(usb is None):
+            continue
+        name = newName(usb[1])
+        di.update({got+1: usb[0]})
+        if(name == "autodetect"):
+            inp = got+1
+            print(got+1)
+            break
+        if(debugging):
+            print("#"+str(got+1) +", "+usb[0]+ ": " + usb[1])
+        else:
+            print("#"+str(got+1) +", ID "+ usb[0] +", NAME: "+ name) 
+        got += 1
+    if(got == 0):
+        return False
+
+    # USB selection
+    if(inp is None):
+        print(' ')
+        print(' ')
+        print("Enter the number of the USB you want for xboxdrv: ")
+        inp = input()
+        if(isInt(inp, got) is not True):
+            print("The number you entered is not a number or is not in range")
+            return False
+    if(not debugging):
+        os.system('clear')
+    
+    # Controller type selection (If --type is not enabled)
+    if(selectedType is None):
+        print("SUCCESS! You selected input " + inp)
+        print("Input #" + inp + "'s full ID is " + di[int(inp)])
+        print(' ')
+        print("! Please input your controller type !")
+        for idx, val in enumerate(xboxdrvTypes):
+            print(val)
+        typ = input()
+        if(typ in xboxdrvTypes):
+            selectedType = typ
+        else:
+            print(val + " is not a type in xboxdrv.")
+            return False
+        
+    if(not debugging):
+        os.system('clear')
+
+    # Create xboxdrv with args the user has selected
+    do = di[int(inp)]
+    print("Selected type " + selectedType + " on " + do)
+    print("sudo is required for xboxdrv on most distros because it can\'t see your controller otherwise")
+    print(' ')
+    naturalArgs = ""
+    for idx, val in enumerate(args):
+        naturalArgs = val + " "
+    if(debugging):
+        print("DEBUG: sudo xboxdrv --device-by-id "+do+ " --type "+selectedType+ " " +naturalArgs)
+        if(len(naturalArgs) > 0):
+            print("DEBUG: full added list of args to xboxdrv: "+naturalArgs)
+        if("-s" not in naturalArgs):
+            print("WARNING: If you don't want the xboxdrv to show all inputs use \"-x s\" after debug without quotes")
+            print("Press any key to continue...")
+            input()
+    else:
+        naturalArgs = naturalArgs + "-s "
+    # xboxdrv will now start and take-over the program for the controller input
+    os.system(
+        'sudo xboxdrv' +
+            ' --device-by-id '+do+ 
+            ' --type '+selectedType+ 
+            " " + naturalArgs
+    )
+
+    # Were done here.
+    return True
+
+# Start the file and do stuff.
+# If we failed at starting, print it.
+sBool = start()
+if(sBool is not True):
+    print("Start failed! You might not have any USBs plugged in or we couldn't detect any")
