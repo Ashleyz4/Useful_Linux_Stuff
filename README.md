@@ -1,13 +1,15 @@
 # Useful_Linux_Stuff
 Stuff that I use with Linux that I've made to make things easier for myself.
-___
-My main OS is KDE Neon. Most of the stuff placed in here is going to be specific for KDE. Obviously they can be changed easily, but I just thought I'd put this note in here for anyone interested.
 
 ___
 
-### xboxdrv_hlpr
-Created for the purpose to help out people who use xboxdrv. <br/> <br/>
-Personally, it wasn't detecting my controller correctly, and I had looked on the internet for a very long time to look up a fix. After I found a fix, if I ever changed my usb port for my controller it would change the ID of the controller every time, so I'd have to look for it again. This fixes that by enabling usb searching and finding your controller and it's ID fast. <br/>
-This has debugging as-well so if need be, you can create log what it says, and send it back my way in an issue. <br/>
-**TESTED ON PYTHON 2.7** <br/>
+For anyone curious I run KDE Plasma Neon on 16.04 at latest. Pretty much everything made here will have been tested on there.
+
+___
+
+### xboxdrv_hlpr: created for the purpose to help out people who use xboxdrv
+###### My personal favorite creation I've made on Linux and python both.
+xboxdrv doesn't have builtin autodetection, easy selection or vice versa. This is here to help with that <br/>
+xboxdrv_hlpr will detect your plugged in USBs and give you an output to select the device you want, to make xboxdrv much easier then it already is and with built in auto-detection in the case that you change USBs. <br/> <br/>
+**TESTED ON PYTHON 2.7 and UP** <br/>
 *Use --help for more information while using*
