@@ -3,7 +3,19 @@ Stuff that I use with Linux that I've made to make things easier for myself.
 
 ___
 
-For anyone curious I run KDE Plasma Neon on 16.04 at latest. Pretty much everything made here will have been tested on there.
+# How to install my scripts?
+Place a downloaded script into /usr/local/bin/
+Once placed you can use the script by typing the name of it in terminal, ezpz!
+You can also send a keybind to the script by using your built in settings custom shortcut
+
+___
+
+### Screenshot_Region: A code to help people easily screenshot things on their screen.
+Screenshot_Region is an automated screenshot helper built for the linux platform, in relation to something like ShareX on windows
+Upon first start, if you don't have the packages required, that's OK! The script is built to automatically detect and let you choose what you want downloaded. Sadly, if you choose not to download one of the required packages, it will end.
+Once you have the packages up, the tool will take a screenshot with scrot, send it to feh as a frozen display, use gnome-screenshot to take the shot, end feh with xdotool and copy it to your clipboard with xclip. If you use ubuntu or debian like systems there's also a notify-send at the end but I choose not to really care for it to be honest, it's not required.
+##### **Required Packages**:
+######  scrot xdotool gnome-screenshot xclip feh
 
 ___
 
