@@ -1,25 +1,93 @@
 #!/bin/bash
 
+# first, we need this to log if the user agrees to packages
+x=$HOME/outputScreenshotRegion.log
+# next, a function to check to see if a package is installed
+# if it's not, let the user install it
+install_package() {
+	# grab a dpkg-query and double check for "ok installed" in status
+	# once done, if it fails the if statement will be entered, yay?
+	if [[ $(dpkg-query -W -f='${Status}' $1 2>/dev/null | grep -c "ok installed") -eq 0 ]]; then
+		if [ -t 0 ]; then
+			echo "$1 is not installed and is required; Do you want to install it? [yN]: "
+			read instdsp
+		else
+			# here i went through a tedious process of trying to start a terminal
+			# for the user to install their program.
+			# I don't want to ask for their password cause that's invasion I feel like,
+			# plus, this is only ran if the user isn't running this in a terminal.
+			xterm -e script -c 'echo "'$a' is not installed and is required; Do you want to install it? [yN]: "; read' $x
+			sleep 0.2
+			instdsp=$(tail -3 $x | head -1);
+		fi
+		# bash is stupidly annoying with if statements
+		if [ "$instdsp" = "y" ] || [ "$instdsp" = "Y" ]; then
+			xterm -e script -c 'sudo apt-get install $1 && sleep 2'
+		elif [ "$instdsp" = "n" ] || [ "$instdsp" = "N" ]; then
+			echo "cannot run without $1, exiting..." && exit 1
+			exit 0
+		else
+			echo "Invalid input, required y or n"
+			exit 0
+		fi
+		# double check
+		if [[ $(dpkg-query -W -f='${Status}' $1 2>/dev/null | grep -c "ok installed") -eq 0 ]]; then
+			echo "$1 was not installed correctly or doesn't exist after install? Exiting..."
+			exit 0
+		fi
+	fi
+}
+# now that that's done, check that the user has all the required stuff
+# this was a pain to setup, I'm glad it works.
+# this will also only happen one time because of the temp file
+tmpSelf=$HOME/Pictures/Screenshots/Screenshot_Region.tmp
+if [[ ! -f $tmpSelf ]]; then
+	# trust me all of these work great together
+	install_package devilspie2;
+	install_package scrot;
+	install_package xdotool;
+	install_package gnome-screenshot;
+	install_package xclip;
+	install_package feh
+	#install_package notify-send
+	echo "This file is needed to keep track of packages on Screenshot Region" > $tmpSelf
+fi
+
 place=$(date +%m-%Y)
 file=$(date +%d-%m-%Y_%H-%M-%S)
 
+# write into a file on devilspie2 so we can start display without a border. 
+#  (frozen screen for picture)
+devilspie=$HOME/.config/devilspie2/Screenshot_Region.lua
+mkdir -p $HOME/.config/devilspie2/
+echo "if (get_application_name()==\"display\") then" > $devilspie
+echo "   undecorate_window();" > $devilspie
+echo "end" > $devilspie
 
+# create screenshots folder if it doesn't already exists
 mkdir -p ~/Pictures/Screenshots/$place/
 
-scrot ~/Pictures/tmp.png -z -q 75
-kstart5 display ~/Pictures/tmp.png --keepabove --currentdesktop --fullscreen --activate &
+# start scrot, we take a temporary picture of the users desktop for the picture
+# then store the picture in ~/Pictures/tmp.png
+scrot ~/Pictures/tmp.png -z -q 100
+feh -x -q -D 5 -B black --fullscreen -N ~/Pictures/tmp.png &
 
+sleep 0.2
+
+window=$(xdotool search --onlyvisible --class 'feh' | tail -n1)
+# Take the shot.
+gnome-screenshot -f $HOME/Pictures/Screenshots/$place/$file.png -p -a
 sleep 1
-
-window=$(xdotool search --onlyvisible --class 'display' | tail -n1)
-xdotool windowfocus $window
-
-gnome-screenshot -f ~/Pictures/Screenshots/$place/$file.png -p -a
-sleep 1
-
-if [[ -f ~/Pictures/Screenshots/$place/$file.png ]]; then
-	xclip -sel clip -l 3 -t image/png ~/Pictures/Screenshots/$place/$file.png
-	kdialog --icon ~/Pictures/Screenshots/$place/$file.png --title "Screenshot" --passivepopup "Screenshot copied to clipboard" 5 &
+# Place the shot in a folder and then we're done
+if [[ -f $HOME/Pictures/Screenshots/$place/$file.png ]]; then
+	xclip -sel clip -l 3 -t image/png $HOME/Pictures/Screenshots/$place/$file.png
+	# check if notify-send is installed, it's not required.
+	if [[ $(dpkg-query -W -f='${Status}' notify-send 2>/dev/null | grep -c "ok installed") -eq 1 ]]; then
+		notify-send --expire-time=5000 --app-name="Screenshot_Region" --icon=$HOME/Pictures/Screenshots/$place/$file.png "Successfully took a picture!"
+	fi
 fi
-
+# kill the display frame and delete the devilspie thing incase they startup Display again
 xdotool windowkill $window
+rm $devilspie
+
+# we're done here
