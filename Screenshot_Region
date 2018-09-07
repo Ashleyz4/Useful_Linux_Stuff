@@ -43,7 +43,6 @@ install_package() {
 tmpSelf=$HOME/Pictures/Screenshots/Screenshot_Region.tmp
 if [[ ! -f $tmpSelf ]]; then
 	# trust me all of these work great together
-	install_package devilspie2;
 	install_package scrot;
 	install_package xdotool;
 	install_package gnome-screenshot;
@@ -55,14 +54,6 @@ fi
 
 place=$(date +%m-%Y)
 file=$(date +%d-%m-%Y_%H-%M-%S)
-
-# write into a file on devilspie2 so we can start display without a border. 
-#  (frozen screen for picture)
-devilspie=$HOME/.config/devilspie2/Screenshot_Region.lua
-mkdir -p $HOME/.config/devilspie2/
-echo "if (get_application_name()==\"display\") then" > $devilspie
-echo "   undecorate_window();" > $devilspie
-echo "end" > $devilspie
 
 # create screenshots folder if it doesn't already exists
 mkdir -p ~/Pictures/Screenshots/$place/
