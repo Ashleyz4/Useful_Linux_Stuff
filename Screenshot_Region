@@ -45,7 +45,6 @@ if [[ ! -f $tmpSelf ]]; then
 	# trust me all of these work great together
 	install_package scrot;
 	install_package xdotool;
-	install_package gnome-screenshot;
 	install_package xclip;
 	install_package feh
 	#install_package notify-send
@@ -54,6 +53,7 @@ fi
 
 place=$(date +%m-%Y)
 file=$(date +%d-%m-%Y_%H-%M-%S)
+full="$HOME/Pictures/Screenshots/$place/$file.png"
 
 # create screenshots folder if it doesn't already exists
 mkdir -p ~/Pictures/Screenshots/$place/
@@ -67,18 +67,17 @@ sleep 0.2
 
 window=$(xdotool search --onlyvisible --class 'feh' | tail -n1)
 # Take the shot.
-gnome-screenshot -f $HOME/Pictures/Screenshots/$place/$file.png -p -a
+scrot $full -s
 sleep 1
 # Place the shot in a folder and then we're done
-if [[ -f $HOME/Pictures/Screenshots/$place/$file.png ]]; then
-	xclip -sel clip -l 3 -t image/png $HOME/Pictures/Screenshots/$place/$file.png
+if [[ -f $full ]]; then
+	xclip -sel c -t image/png < $full
 	# check if notify-send is installed, it's not required.
 	if [[ $(dpkg-query -W -f='${Status}' notify-send 2>/dev/null | grep -c "ok installed") -eq 1 ]]; then
-		notify-send --expire-time=5000 --app-name="Screenshot_Region" --icon=$HOME/Pictures/Screenshots/$place/$file.png "Successfully took a picture!"
+		notify-send --expire-time=5000 --app-name="Screenshot_Region" --icon=$full "Successfully took a picture!"
 	fi
 fi
 # kill the display frame and delete the devilspie thing incase they startup Display again
 xdotool windowkill $window
-rm $devilspie
 
 # we're done here
